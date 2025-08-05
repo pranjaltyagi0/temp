@@ -1,12 +1,9 @@
 SELECT
-    e.employee_id,
     e.first_name,
     e.last_name,
-    j1.job_title AS first_job,
-    j2.job_title AS promoted_to
+    j.max_salary AS "first job sal"
 FROM employees e
 JOIN (
-    -- First job for each employee using correlated subquery
     SELECT jh.employee_id, jh.job_id
     FROM job_history jh
     WHERE jh.start_date = (
@@ -14,21 +11,6 @@ JOIN (
         FROM job_history
         WHERE employee_id = jh.employee_id
     )
-) first_jobs ON e.employee_id = first_jobs.employee_id
-LEFT JOIN (
-    -- Promoted job using correlated subquery
-    SELECT jh.employee_id, jh.job_id
-    FROM job_history jh
-    WHERE jh.start_date = (
-        SELECT MIN(start_date)
-        FROM job_history
-        WHERE employee_id = jh.employee_id
-          AND start_date > (
-              SELECT MIN(start_date)
-              FROM job_history
-              WHERE employee_id = jh.employee_id
-          )
-    )
-) promoted_jobs ON e.employee_id = promoted_jobs.employee_id
-JOIN jobs j1 ON first_jobs.job_id = j1.job_id
-LEFT JOIN jobs j2 ON promoted_jobs.job_id = j2.job_id;
+) first_job ON e.employee_id = first_job.employee_id
+JOIN jobs j ON first_job.job_id = j.job_id
+ORDER BY e.first_name ASC;
