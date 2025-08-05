@@ -1,0 +1,34 @@
+SELECT
+    e.employee_id,
+    e.first_name,
+    e.last_name,
+    j1.job_title AS first_job,
+    j2.job_title AS promoted_to
+FROM employees e
+JOIN (
+    -- First job for each employee
+    SELECT employee_id, job_id
+    FROM job_history
+    WHERE (employee_id, start_date) IN (
+        SELECT employee_id, MIN(start_date)
+        FROM job_history
+        GROUP BY employee_id
+    )
+) first_jobs ON e.employee_id = first_jobs.employee_id
+LEFT JOIN (
+    -- Promotion job: job with the next start_date
+    SELECT jh.employee_id, jh.job_id
+    FROM job_history jh
+    JOIN (
+        SELECT employee_id, MIN(start_date) AS next_start
+        FROM job_history
+        WHERE (employee_id, start_date) NOT IN (
+            SELECT employee_id, MIN(start_date)
+            FROM job_history
+            GROUP BY employee_id
+        )
+        GROUP BY employee_id
+    ) next_jobs ON jh.employee_id = next_jobs.employee_id AND jh.start_date = next_jobs.next_start
+) promoted_jobs ON e.employee_id = promoted_jobs.employee_id
+JOIN jobs j1 ON first_jobs.job_id = j1.job_id
+LEFT JOIN jobs j2 ON promoted_jobs.job_id = j2.job_id;
