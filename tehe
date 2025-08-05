@@ -1,16 +1,8 @@
 SELECT
+    e.employee_id,
     e.first_name,
-    e.last_name,
-    j.max_salary AS "first job sal"
+    e.last_name
 FROM employees e
-JOIN (
-    SELECT jh.employee_id, jh.job_id
-    FROM job_history jh
-    WHERE jh.start_date = (
-        SELECT MIN(start_date)
-        FROM job_history
-        WHERE employee_id = jh.employee_id
-    )
-) first_job ON e.employee_id = first_job.employee_id
-JOIN jobs j ON first_job.job_id = j.job_id
-ORDER BY e.first_name ASC;
+JOIN employees m ON e.manager_id = m.employee_id
+WHERE e.hire_date < m.hire_date
+ORDER BY e.employee_id ASC;
