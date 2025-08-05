@@ -6,29 +6,29 @@ SELECT
     j2.job_title AS promoted_to
 FROM employees e
 JOIN (
-    -- First job for each employee
-    SELECT employee_id, job_id
-    FROM job_history
-    WHERE (employee_id, start_date) IN (
-        SELECT employee_id, MIN(start_date)
+    -- First job for each employee using correlated subquery
+    SELECT jh.employee_id, jh.job_id
+    FROM job_history jh
+    WHERE jh.start_date = (
+        SELECT MIN(start_date)
         FROM job_history
-        GROUP BY employee_id
+        WHERE employee_id = jh.employee_id
     )
 ) first_jobs ON e.employee_id = first_jobs.employee_id
 LEFT JOIN (
-    -- Promotion job: job with the next start_date
+    -- Promoted job using correlated subquery
     SELECT jh.employee_id, jh.job_id
     FROM job_history jh
-    JOIN (
-        SELECT employee_id, MIN(start_date) AS next_start
+    WHERE jh.start_date = (
+        SELECT MIN(start_date)
         FROM job_history
-        WHERE (employee_id, start_date) NOT IN (
-            SELECT employee_id, MIN(start_date)
-            FROM job_history
-            GROUP BY employee_id
-        )
-        GROUP BY employee_id
-    ) next_jobs ON jh.employee_id = next_jobs.employee_id AND jh.start_date = next_jobs.next_start
+        WHERE employee_id = jh.employee_id
+          AND start_date > (
+              SELECT MIN(start_date)
+              FROM job_history
+              WHERE employee_id = jh.employee_id
+          )
+    )
 ) promoted_jobs ON e.employee_id = promoted_jobs.employee_id
 JOIN jobs j1 ON first_jobs.job_id = j1.job_id
 LEFT JOIN jobs j2 ON promoted_jobs.job_id = j2.job_id;
